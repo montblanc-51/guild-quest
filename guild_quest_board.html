@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Guild Quest Board</title>
+<style>
+  :root{
+    --wood:#4a2b18;
+    --wood2:#2e1b11;
+    --paper:#f3e4bf;
+    --ink:#2a2118;
+    --gold:#d8a84a;
+    --cream:#fff6da;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    color:var(--ink);
+    font-family: ui-serif, "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(255,210,126,.18), transparent 35%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 2px, rgba(0,0,0,.025) 2px 5px),
+      linear-gradient(180deg, #2a160c, #150d08 70%);
+    min-height:100vh;
+  }
+  body:before{
+    content:"";
+    position:fixed; inset:0; pointer-events:none;
+    background:radial-gradient(circle at center, transparent 45%, rgba(0,0,0,.45) 100%);
+  }
+  .wrap{width:min(1280px,96vw); margin:0 auto; padding:22px 0 80px; position:relative; z-index:1}
+  .board{
+    position:relative;
+    border:10px solid #3a2114;
+    border-radius:24px;
+    padding:28px;
+    box-shadow:0 25px 80px #0009, inset 0 0 0 2px #7a4e2c;
+    background:
+      linear-gradient(90deg, transparent 49%, rgba(255,255,255,.03) 50%, transparent 51%),
+      repeating-linear-gradient(0deg, #5a351f 0 28px, #4d2d1b 28px 56px);
+    overflow:hidden;
+  }
+  .ivy{position:absolute;font-size:42px;filter:drop-shadow(0 5px 4px #0006);user-select:none}
+  .ivy.i1{left:4px;top:0;transform:rotate(-14deg)}
+  .ivy.i2{right:4px;top:4px;transform:scaleX(-1) rotate(-14deg)}
+  .lantern{position:absolute;right:20px;top:105px;font-size:64px;filter:drop-shadow(0 0 18px #ffbf4a)}
+  .hero{
+    margin:0 auto 20px;
+    max-width:830px;
+    text-align:center;
+    padding:14px 18px 18px;
+    border-radius:16px;
+    background:linear-gradient(#f2dfb8,#e7c98f);
+    border:3px solid #7b4b24;
+    box-shadow:0 8px 0 #2d1a10,0 12px 30px #0006;
+    transform:rotate(-.5deg);
+  }
+  .hero .eyebrow{font-weight:700;letter-spacing:.08em}
+  .hero h1{margin:2px 0 0;font-size:clamp(46px,7vw,92px);line-height:.9;font-family:Georgia,serif;letter-spacing:.02em}
+  .hero .sub{margin-top:10px;font-weight:700;font-size:clamp(15px,2vw,21px)}
+  .motto{
+    margin:0 auto 24px;
+    width:max-content; max-width:90%;
+    padding:9px 18px;
+    border:2px solid #5f3b21; border-radius:12px;
+    color:#fff6dd;
+    background:#12203f;
+    transform:rotate(-1deg);
+    box-shadow:0 6px 16px #0005;
+    font-weight:700;
+  }
+
+  .quests{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:18px;
+  }
+  .quest{
+    --accent:#c84747;
+    position:relative;
+    min-height:285px;
+    padding:22px 20px 18px;
+    border:3px solid color-mix(in srgb, var(--accent) 55%, #68401f);
+    border-radius:16px 13px 18px 12px;
+    box-shadow:0 8px 0 #2b190f, 0 12px 24px #0005;
+    background:
+      linear-gradient(color-mix(in srgb, var(--accent) 14%, #f8e9c7), color-mix(in srgb, var(--accent) 8%, #f4e4bd));
+    cursor:pointer;
+    transition:.18s ease;
+    overflow:hidden;
+  }
+  .quest:hover{transform:translateY(-7px) rotate(-.3deg); box-shadow:0 14px 0 #2b190f,0 20px 30px #0007}
+  .quest.accepted{outline:4px solid #e7c15a; outline-offset:3px}
+  .quest:after{
+    content:"";
+    position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(circle at 18% 22%, rgba(255,255,255,.25), transparent 2px),
+      repeating-linear-gradient(15deg, transparent 0 18px, rgba(75,42,21,.035) 19px 20px);
+    mix-blend-mode:multiply;
+  }
+  .qhead{display:flex;align-items:center;gap:10px}
+  .qid{
+    color:white;background:var(--accent);
+    border-radius:999px;padding:7px 10px;font-weight:900;font-family:Georgia,serif;
+    box-shadow:inset 0 -3px rgba(0,0,0,.2);
+  }
+  .new{font-size:12px;font-weight:900;color:#fff;background:#a62e2e;padding:3px 8px;border-radius:5px;transform:rotate(-6deg)}
+  .quest h2{font-size:clamp(23px,2.1vw,34px);line-height:1.25;margin:12px 0 9px}
+  .quest p{font-family:system-ui,"Noto Sans JP",sans-serif;line-height:1.65;margin:0;color:#37291d}
+  .reward{
+    position:absolute; left:18px; right:18px; bottom:16px;
+    border-top:1px dashed color-mix(in srgb,var(--accent) 70%, #6b4e2b);
+    padding-top:10px;
+    font-family:system-ui,"Noto Sans JP",sans-serif;
+  }
+  .reward b{display:block;color:color-mix(in srgb,var(--accent) 85%, #2f2219);font-size:12px;letter-spacing:.08em}
+  .reward span{font-weight:800}
+  .qicon{position:absolute;right:14px;top:12px;font-size:42px;opacity:.86;filter:drop-shadow(0 2px 0 #fff7)}
+  .status{position:absolute;right:14px;bottom:14px;font-size:11px;font-family:system-ui,sans-serif;background:#fff7;padding:4px 7px;border-radius:999px}
+  .cat{
+    margin:24px auto 0;
+    width:min(940px,100%);
+    display:flex;align-items:center;gap:18px;
+    background:#ead4a1;
+    border:3px solid #6a421f;
+    border-radius:18px;
+    padding:15px 18px;
+    box-shadow:0 8px 0 #2d1a10;
+  }
+  .cat .face{font-size:72px;line-height:1;filter:drop-shadow(0 4px 2px #0003)}
+  .cat strong{font-size:clamp(24px,3vw,40px)}
+  .cat small{display:block;margin-top:5px;font-family:system-ui,sans-serif}
+  .footer-note{text-align:center;color:#f8e4b5;margin-top:22px;font-family:system-ui,sans-serif;font-size:14px;opacity:.9}
+
+  dialog{
+    border:0;border-radius:20px;padding:0;width:min(720px,92vw);
+    background:#f2e1bb;color:#2a2118;
+    box-shadow:0 30px 100px #000c;
+  }
+  dialog::backdrop{background:#0a0805aa;backdrop-filter:blur(4px)}
+  .modal{padding:26px 26px 22px;position:relative;border:4px solid #724920;border-radius:20px}
+  .modal .close{position:absolute;right:14px;top:12px;border:0;background:#3b2618;color:#fff;width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer}
+  .modal h3{font-size:34px;margin:0 48px 8px 0}
+  .modal .desc{font-family:system-ui,sans-serif;line-height:1.8}
+  .modal .rewardbox{margin:20px 0;padding:15px 16px;background:#fff2cf;border:2px solid #b6884c;border-radius:12px;font-family:system-ui,sans-serif}
+  .modal .rewardbox b{display:block;font-size:12px;letter-spacing:.1em;margin-bottom:4px}
+  .actions{display:flex;gap:10px;flex-wrap:wrap}
+  button.action{
+    border:0;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer;font-size:16px
+  }
+  .accept{background:#1d6b4b;color:white}
+  .complete{background:#d09a35;color:#25170d}
+  .skip{background:#ded2b5;color:#483a2a}
+  .log{
+    margin-top:24px;padding:16px;border-radius:16px;
+    background:#1b1420;color:#f6e8c4;border:2px solid #7a5a91;
+    font-family:system-ui,sans-serif;
+  }
+  .log h3{margin:0 0 10px;font-family:ui-serif,serif}
+  .log ul{margin:0;padding-left:20px}
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translate(-50%,130%);
+    padding:12px 18px;border-radius:999px;background:#1d1b17;color:white;font-family:system-ui,sans-serif;
+    box-shadow:0 8px 30px #0008;transition:.25s;z-index:10
+  }
+  .toast.show{transform:translate(-50%,0)}
+  @media(max-width:920px){.quests{grid-template-columns:1fr 1fr}.lantern{display:none}}
+  @media(max-width:620px){.quests{grid-template-columns:1fr}.board{padding:16px}.quest{min-height:260px}.cat{align-items:flex-start}.hero h1{font-size:48px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <main class="board">
+    <div class="ivy i1">🌿</div><div class="ivy i2">🌿</div><div class="lantern">🏮</div>
+
+    <section class="hero">
+      <div class="eyebrow">今日、世界がちょっと広がる。</div>
+      <h1>Guild Quest</h1>
+      <div class="sub">さあ、次の冒険に出かけよう。</div>
+    </section>
+
+    <div class="motto">Questは、やらなきゃじゃない。やってみたくなる冒険だ。</div>
+
+    <section class="quests" id="quests"></section>
+
+    <section class="cat">
+      <div class="face">🐱</div>
+      <div>
+        <strong>迷ったら、ワクワクする方へ。</strong>
+        <small>「これ意味ある？」と思ったQuestは、外してOK。受注したQuestだけが、君の冒険ログに残る。</small>
+      </div>
+    </section>
+
+    <section class="log">
+      <h3>📜 いままでの冒険ログ</h3>
+      <ul id="logList"><li>まだQuestは受注されていません。</li></ul>
+    </section>
+  </main>
+  <div class="footer-note">このボードはあなたの端末にQuestの状態を保存します。</div>
+</div>
+
+<dialog id="dialog">
+  <div class="modal">
+    <button class="close" aria-label="閉じる">×</button>
+    <h3 id="mTitle"></h3>
+    <div class="desc" id="mDesc"></div>
+    <div class="rewardbox"><b>QUEST REWARD</b><span id="mReward"></span></div>
+    <div class="actions">
+      <button class="action accept" id="acceptBtn">このQuestを受注する</button>
+      <button class="action complete" id="completeBtn">クリアした！</button>
+      <button class="action skip" id="skipBtn">今回は見送る</button>
+    </div>
+  </div>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+const questData = [
+  {
+    id:1,color:"#d75959",icon:"☕",
+    title:"京都で「秘密基地」を見つける。",
+    short:"路地、喫茶店、川辺、本屋。誰にも教えたくないくらい、また戻りたくなる場所をひとつ。",
+    desc:"目的地は決めなくていい。京都を歩いていて「ここ、なんか好きだな」と感じた場所をひとつ見つける。写真を1枚撮るか、短いメモを残せばクリア。",
+    reward:"心が帰る場所ができる"
+  },
+  {
+    id:2,color:"#3589cf",icon:"🎮",
+    title:"3,000円で、人生に新しい遊びを実装せよ。",
+    short:"おもちゃ、画材、謎の電子機器。『これ何に使うんだ？』くらいがちょうどいい。",
+    desc:"3,000円以内で、自分が普段なら選ばない遊び道具をひとつ手に入れる。上手くなる必要はない。最低30分、本気で遊んだらクリア。",
+    reward:"退屈がひとつ減る"
+  },
+  {
+    id:3,color:"#9b66c5",icon:"🏰",
+    title:"存在しないものを、1個つくれ。",
+    short:"完成させなくていい。売らなくていい。『こんなのあったら面白い』を形にする。",
+    desc:"架空の会員証、未来のおもちゃ、存在しない店の看板、謎のWebページ。完成度は問わない。頭の中にしかなかったものを、現実側へ一度だけ引っ張り出す。",
+    reward:"想像力が現実に触れる"
+  },
+  {
+    id:4,color:"#59a760",icon:"🚉",
+    title:"知らない駅で降りて、1000円だけ使って帰ってこい。",
+    short:"降りる駅は直感で決める。知らない景色、人、店を見つける。",
+    desc:"普段使わない駅で途中下車。使えるお金は1,000円。食べても、写真を撮っても、変なものを買ってもいい。『知らなかったもの』をひとつ持ち帰ればクリア。",
+    reward:"世界の解像度が上がる"
+  },
+  {
+    id:5,color:"#e28646",icon:"🧸",
+    title:"子どもの頃ほしかったものを、今の技術でつくれ。",
+    short:"あの頃は無理だった夢を、大人の道具でもう一度。",
+    desc:"昔ほしかったおもちゃ、秘密基地、ゲーム、仕掛け。AI、3D、工作、Web、紙とペンでもいい。『今なら少しだけできる』形まで持っていけばクリア。",
+    reward:"過去の自分と仲直りできる"
+  },
+  {
+    id:6,color:"#3d9ea1",icon:"🎈",
+    title:"自分とはまったく違う人生を送っている人と話せ。",
+    short:"仕事、趣味、価値観。自分の『当たり前』の外側へ行く。",
+    desc:"年齢でも職業でも生き方でもいい。自分とはずいぶん違う人に、30分くらい話を聞く。『そんな見方があるのか』をひとつ持ち帰ればクリア。",
+    reward:"新しい視点が手に入る"
+  }
+];
+
+const state = JSON.parse(localStorage.getItem("guildQuestState") || "{}");
+const questsEl = document.getElementById("quests");
+const dialog = document.getElementById("dialog");
+const toast = document.getElementById("toast");
+let activeId = null;
+
+function save(){ localStorage.setItem("guildQuestState", JSON.stringify(state)); render(); renderLog(); }
+function esc(s){ return s.replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m])); }
+
+function render(){
+  questsEl.innerHTML = questData.map(q=>{
+    const s = state[q.id] || "open";
+    const label = s==="accepted" ? "受注中" : s==="complete" ? "CLEAR!" : "未受注";
+    return `<article class="quest ${s==="accepted"?"accepted":""}" style="--accent:${q.color}" data-id="${q.id}">
+      <div class="qhead"><span class="qid">QUEST ${String(q.id).padStart(2,"0")}</span><span class="new">${s==="complete"?"CLEAR!":"NEW!"}</span></div>
+      <div class="qicon">${q.icon}</div>
+      <h2>${esc(q.title)}</h2>
+      <p>${esc(q.short)}</p>
+      <div class="reward"><b>QUEST REWARD</b><span>${esc(q.reward)}</span></div>
+      <div class="status">${label}</div>
+    </article>`;
+  }).join("");
+  document.querySelectorAll(".quest").forEach(el=>el.addEventListener("click",()=>openQuest(+el.dataset.id)));
+}
+
+function openQuest(id){
+  activeId=id;
+  const q=questData.find(x=>x.id===id);
+  document.getElementById("mTitle").textContent=q.title;
+  document.getElementById("mDesc").textContent=q.desc;
+  document.getElementById("mReward").textContent=q.reward;
+  const s=state[id]||"open";
+  document.getElementById("acceptBtn").style.display = s==="accepted"||s==="complete" ? "none":"inline-block";
+  document.getElementById("completeBtn").style.display = s==="complete" ? "none":"inline-block";
+  dialog.showModal();
+}
+function notify(msg){
+  toast.textContent=msg; toast.classList.add("show");
+  clearTimeout(window.__t); window.__t=setTimeout(()=>toast.classList.remove("show"),1800);
+}
+document.querySelector(".close").onclick=()=>dialog.close();
+document.getElementById("acceptBtn").onclick=()=>{state[activeId]="accepted";save();dialog.close();notify("Questを受注しました。冒険ログに追加！");};
+document.getElementById("completeBtn").onclick=()=>{state[activeId]="complete";save();dialog.close();notify("Quest CLEAR！ 次の世界が少し開きました。");};
+document.getElementById("skipBtn").onclick=()=>{state[activeId]="skipped";save();dialog.close();notify("今回は見送り。ワクワクするQuestだけでOK。");};
+
+function renderLog(){
+  const ul=document.getElementById("logList");
+  const rows=questData.filter(q=>state[q.id]==="accepted"||state[q.id]==="complete");
+  if(!rows.length){ul.innerHTML="<li>まだQuestは受注されていません。</li>";return;}
+  ul.innerHTML=rows.map(q=>`<li>${state[q.id]==="complete"?"✅":"🧭"} ${esc(q.title)} — ${state[q.id]==="complete"?"CLEAR":"受注中"}</li>`).join("");
+}
+render(); renderLog();
+</script>
+</body>
+</html>
